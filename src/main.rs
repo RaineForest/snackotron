@@ -7,7 +7,7 @@ mod model;
 use model::Asset;
 
 async fn get() -> impl Responder {
-    let assets = Asset::getAll().await;
+    let assets = Asset::get_all().await;
     match assets {
         Ok(a) => HttpResponse::Ok().json(a),
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
@@ -27,7 +27,7 @@ async fn db(_req: HttpRequest) -> impl Responder {
     }
 }
 
-async fn GETbEANS() -> impl Responder {
+async fn get_beans() -> impl Responder {
     let asset = Asset::get().await;
     match asset {
         Ok(a) => HttpResponse::Ok().json(a),
@@ -46,7 +46,7 @@ async fn main() {
             App::new()
                 .route("/", web::get().to(get))
                 .route("/add/{upc}/{count}/{unit}/{common_name}", web::get().to(db))
-                .route("/gimmeBeans", web::get().to(GETbEANS))
+                .route("/gimmeBeans", web::get().to(get_beans))
         })
         .bind("127.0.0.1:8080")?
         .shutdown_timeout(60) // <- Set shutdown timeout to 60 seconds
