@@ -30,4 +30,10 @@ impl Asset {
                 Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets WHERE common_name = "beans""#)
                         .fetch_one(&mut conn).await?)
         }
+
+        pub async fn getAll() -> Result<Vec<Asset>, sqlx::Error> {
+                let mut conn = SqliteConnection::connect(SQLITE_URL).await?;
+
+                Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets"#).fetch_all(&mut conn).await?)
+        }
 }
