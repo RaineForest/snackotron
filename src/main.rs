@@ -1,15 +1,21 @@
 use actix_web::{rt::System, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use std::convert::TryInto;
+use askama::Template;
 use std::sync::mpsc;
 use std::thread;
 
 mod model;
-use model::Asset;
+use crate::model::Asset;
+mod templates;
+use crate::templates::index::IndexTemplate;
 
 async fn get() -> impl Responder {
     let assets = Asset::get_all().await;
     match assets {
-        Ok(a) => HttpResponse::Ok().json(a),
+        //Ok(a) => HttpResponse::Ok().json(a),
+        Ok(a) => {
+            let index = IndexTemplate { assets: &a };
+            HttpResponse::Ok().content_type("text/html").body(index.render().unwrap())
+        },
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
     }
 }

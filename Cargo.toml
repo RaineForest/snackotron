@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 actix-web = "3"
+askama = "0"
 serde = "1"
 sqlx = { version = "0.4.2", features = [ "runtime-actix-native-tls", "sqlite" ] }

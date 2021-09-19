@@ -1,0 +1,12 @@
+<html>
+        <head>
+                <title>Hello world!</title>
+        </head>
+        <body>
+                <ul>
+                {% for asset in assets %}
+                        <li>{{ asset.common_name }}: {{ asset.count }} {{asset.unit}}</li>
+                {% endfor %}
+                </ul>
+        </body>
+</html>
