@@ -1,8 +1,5 @@
-use sqlx::Connection;
-use sqlx::SqliteConnection;
+use sqlx::SqlitePool;
 use serde;
-
-const SQLITE_URL: &str = "sqlite://snackotron.db";
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct Asset {
@@ -13,27 +10,20 @@ pub struct Asset {
 }
 
 impl Asset {
-        pub async fn register(&self) -> Result<i64, sqlx::Error> {
-                let mut conn = SqliteConnection::connect(SQLITE_URL).await?;
-
-                let id: i64 = sqlx::query(
+        pub async fn register(&self, pool: &SqlitePool) -> Result<i64, sqlx::Error> {
+                Ok(sqlx::query(
                         r#"INSERT INTO 'assets' ('upc', 'count', 'unit', 'common_name') VALUES (?, ?, ?, ?)"#)
                         .bind(self.upc).bind(self.count).bind(&self.unit).bind(&self.common_name)
-                        .execute(&mut conn).await?.last_insert_rowid();
-
-                Ok(id)
+                        .execute(&mut pool.acquire().await?).await?.last_insert_rowid())
         }
 
-        pub async fn get() -> Result<Asset, sqlx::Error> {
-                let mut conn = SqliteConnection::connect(SQLITE_URL).await?;
-
+        pub async fn get(pool: &SqlitePool) -> Result<Asset, sqlx::Error> {
                 Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets WHERE common_name = "beans""#)
-                        .fetch_one(&mut conn).await?)
+                        .fetch_one(&mut pool.acquire().await?).await?)
         }
 
-        pub async fn get_all() -> Result<Vec<Asset>, sqlx::Error> {
-                let mut conn = SqliteConnection::connect(SQLITE_URL).await?;
-
-                Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets"#).fetch_all(&mut conn).await?)
+        pub async fn get_all(pool: &SqlitePool) -> Result<Vec<Asset>, sqlx::Error> {
+                Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets"#)
+                        .fetch_all(&mut pool.acquire().await?).await?)
         }
 }
