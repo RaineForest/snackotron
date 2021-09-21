@@ -1,29 +1,50 @@
-use sqlx::SqlitePool;
 use serde;
 
-#[derive(sqlx::FromRow, serde::Serialize)]
-pub struct Asset {
-        pub upc: i64,
-        pub count: i32,
-        pub unit: String,
-        pub common_name: String
+use crate::db_constants::*;
+use sqlx::{Done, FromRow};
+
+
+#[derive(sqlx::Type, serde::Serialize)]
+#[sqlx(rename = "package", rename_all = "lowercase")]
+pub enum Package {
+        Whole,
+        Partial
 }
 
-impl Asset {
-        pub async fn register(&self, pool: &SqlitePool) -> Result<i64, sqlx::Error> {
+#[derive(sqlx::FromRow, serde::Serialize)]
+#[sqlx(rename = "pantry")]
+pub struct Pantry {
+        pub upc: i64,
+        pub amount: i32,
+        pub unit: String,
+        pub package_type: Package,
+        pub brand: String
+}
+
+#[derive(sqlx::FromRow, serde::Serialize)]
+pub struct Food {
+        pub id: i64,
+        pub name: String,
+        pub desc: String,
+}
+
+#[derive(sqlx::FromRow, serde::Serialize)]
+pub struct Tags {
+        pub id: i64,
+        pub food: i64, // Food::id
+        pub upc: i64, // Pantry::upc
+}
+
+impl Pantry {
+        pub async fn register(&self, pool: &DBPool) -> Result<u64, sqlx::Error> {
                 Ok(sqlx::query(
-                        r#"INSERT INTO 'assets' ('upc', 'count', 'unit', 'common_name') VALUES (?, ?, ?, ?)"#)
-                        .bind(self.upc).bind(self.count).bind(&self.unit).bind(&self.common_name)
-                        .execute(&mut pool.acquire().await?).await?.last_insert_rowid())
+                        r#"INSERT INTO pantry (upc, amount, unit, package_type, brand) VALUES ($1, $2, $3, $4, $5)"#)
+                        .bind(self.upc).bind(self.amount).bind(&self.unit).bind(&self.package_type).bind(&self.brand)
+                        .execute(&mut pool.acquire().await?).await?.rows_affected())
         }
 
-        pub async fn get(pool: &SqlitePool) -> Result<Asset, sqlx::Error> {
-                Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets WHERE common_name = "beans""#)
-                        .fetch_one(&mut pool.acquire().await?).await?)
-        }
-
-        pub async fn get_all(pool: &SqlitePool) -> Result<Vec<Asset>, sqlx::Error> {
-                Ok(sqlx::query_as::<_, Asset>(r#"SELECT * FROM assets"#)
+        pub async fn get_all(pool: &DBPool) -> Result<Vec<Pantry>, sqlx::Error> {
+                Ok(sqlx::query_as::<_, Pantry>(r#"SELECT upc, amount, unit, package_type as package_type, brand FROM pantry"#)
                         .fetch_all(&mut pool.acquire().await?).await?)
         }
 }

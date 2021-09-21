@@ -5,7 +5,7 @@
         <body>
                 <ul>
                 {% for asset in assets %}
-                        <li>{{ asset.common_name }}: {{ asset.count }} {{asset.unit}}</li>
+                        <li>{{ asset.upc }}: {{ asset.amount }} {{asset.unit}}</li>
                 {% endfor %}
                 </ul>
         </body>
