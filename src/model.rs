@@ -22,6 +22,7 @@ pub struct Pantry {
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
+#[sqlx(rename = "food")]
 pub struct Food {
         pub id: i64,
         pub name: String,
@@ -29,6 +30,7 @@ pub struct Food {
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
+#[sqlx(rename = "tags")]
 pub struct Tags {
         pub id: i64,
         pub food: i64, // Food::id

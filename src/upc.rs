@@ -55,6 +55,7 @@ pub struct UpcErrorDetails {
         //query: String,
 }
 
+#[derive(Clone)]
 pub struct UpcApi {
         client: Client,
         token: String

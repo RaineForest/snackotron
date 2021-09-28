@@ -12,8 +12,14 @@ mod db_constants;
 use db_constants::*;
 mod upc;
 
-async fn get(pool: web::Data<DBPool>) -> impl Responder {
-    let assets = Pantry::get_all(&pool).await;
+#[derive(Clone)]
+struct Context {
+    pool: DBPool,
+    upc_api: upc::UpcApi
+}
+
+async fn get(ctx: web::Data<Context>) -> impl Responder {
+    let assets = Pantry::get_all(&ctx.pool).await;
     match assets {
         //Ok(a) => HttpResponse::Ok().json(a),
         Ok(a) => {
@@ -24,16 +30,15 @@ async fn get(pool: web::Data<DBPool>) -> impl Responder {
     }
 }
 
-async fn add(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
+async fn add(_req: HttpRequest, ctx: web::Data<Context>) -> impl Responder {
 
-    let upc_api = upc::UpcApi::new(std::env::var("UPC_TOKEN").unwrap());
-    let obj = upc_api.lookup(_req.match_info().get("upc").unwrap());
+    let obj = ctx.upc_api.lookup(_req.match_info().get("upc").unwrap());
 
     
     HttpResponse::NotImplemented()
 }
 
-async fn db(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
+async fn db(_req: HttpRequest, ctx: web::Data<Context>) -> impl Responder {
     let asset = model::Pantry {
         upc: _req.match_info().get("upc").unwrap().parse::<i64>().unwrap(),
         amount: _req.match_info().get("count").unwrap().parse::<f32>().unwrap(),
@@ -41,7 +46,7 @@ async fn db(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
         package_type: Package::Whole,
         brand: "Ajax".to_string()
     };
-    match asset.register(&pool).await {
+    match asset.register(&ctx.pool).await {
         Ok(_) => HttpResponse::Ok().json(()),
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
     }
@@ -51,7 +56,10 @@ async fn db(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
 async fn main() {
     dotenv().ok();
 
-    let pool = DBPool::connect(&std::env::var("DATABASE_URL").unwrap()).await.unwrap();
+    let ctx = Context {
+        pool: DBPool::connect(&std::env::var("DATABASE_URL").unwrap()).await.unwrap(),
+        upc_api: upc::UpcApi::new(std::env::var("UPC_TOKEN").unwrap())
+    };
 
     let (tx, _ /*rx*/) = mpsc::channel();
 
@@ -59,7 +67,7 @@ async fn main() {
         let sys = System::new("http-server");
 
         let srv = HttpServer::new(move || {
-            App::new().data(pool.clone())
+            App::new().data(ctx.clone())
                 .route("/", web::get().to(get))
                 .route("/add/{upc}", web::get().to(add))
                 .route("/add/{upc}/{count}/{unit}", web::get().to(db))
