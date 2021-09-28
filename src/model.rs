@@ -15,7 +15,7 @@ pub enum Package {
 #[sqlx(rename = "pantry")]
 pub struct Pantry {
         pub upc: i64,
-        pub amount: i32,
+        pub amount: f32,
         pub unit: String,
         pub package_type: Package,
         pub brand: String

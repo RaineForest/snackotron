@@ -2,7 +2,7 @@ CREATE TYPE package AS ENUM ('whole', 'partial');
 
 CREATE TABLE "pantry" (
   "upc" bigint PRIMARY KEY,
-  "amount" int,
+  "amount" real,
   "unit" varchar,
   "package_type" package,
   "brand" varchar

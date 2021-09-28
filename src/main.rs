@@ -10,6 +10,7 @@ mod templates;
 use crate::templates::index::IndexTemplate;
 mod db_constants;
 use db_constants::*;
+mod upc;
 
 async fn get(pool: web::Data<DBPool>) -> impl Responder {
     let assets = Pantry::get_all(&pool).await;
@@ -23,10 +24,19 @@ async fn get(pool: web::Data<DBPool>) -> impl Responder {
     }
 }
 
+async fn add(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
+
+    let upc_api = upc::UpcApi::new(std::env::var("UPC_TOKEN").unwrap());
+    let obj = upc_api.lookup(_req.match_info().get("upc").unwrap());
+
+    
+    HttpResponse::NotImplemented()
+}
+
 async fn db(_req: HttpRequest, pool: web::Data<DBPool>) -> impl Responder {
     let asset = model::Pantry {
         upc: _req.match_info().get("upc").unwrap().parse::<i64>().unwrap(),
-        amount: _req.match_info().get("count").unwrap().parse::<i32>().unwrap(),
+        amount: _req.match_info().get("count").unwrap().parse::<f32>().unwrap(),
         unit: _req.match_info().get("unit").unwrap().to_string(),
         package_type: Package::Whole,
         brand: "Ajax".to_string()
@@ -51,6 +61,7 @@ async fn main() {
         let srv = HttpServer::new(move || {
             App::new().data(pool.clone())
                 .route("/", web::get().to(get))
+                .route("/add/{upc}", web::get().to(add))
                 .route("/add/{upc}/{count}/{unit}", web::get().to(db))
         })
         .bind("127.0.0.1:8080")?
